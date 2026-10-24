@@ -1,6 +1,6 @@
 // Lernkasten Service Worker: macht die App offline nutzbar.
 // Bei jeder Änderung an den Dateien VERSION hochzählen, damit Nutzer das Update bekommen.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'lernkasten-' + VERSION;
 const CORE = [
   './',
@@ -9,7 +9,11 @@ const CORE = [
   'icons/icon.svg',
   'icons/icon-192.png',
   'icons/icon-512.png',
-  'icons/apple-touch-icon.png'
+  'icons/apple-touch-icon.png',
+  'fonts/atkinson-hyperlegible-400.woff2',
+  'fonts/atkinson-hyperlegible-700.woff2',
+  'fonts/bricolage-grotesque.woff2',
+  'fonts/ibm-plex-mono-500.woff2'
 ];
 
 self.addEventListener('install', e => {
@@ -32,17 +36,17 @@ self.addEventListener('fetch', e => {
   // Seite selbst: erst Netz (frische Version), sonst Cache (offline)
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); return res; })
+      fetch(req).then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); } return res; })
         .catch(() => caches.match('index.html'))
     );
     return;
   }
 
-  // Eigene Dateien und Google Fonts: erst Cache, dann Netz und nachlegen
-  if (url.origin === location.origin || url.hostname.endsWith('fonts.googleapis.com') || url.hostname.endsWith('fonts.gstatic.com')) {
+  // Eigene Dateien: erst Cache, dann Netz und nachlegen
+  if (url.origin === location.origin) {
     e.respondWith(
       caches.match(req).then(hit => hit || fetch(req).then(res => {
-        if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
         return res;
       }))
     );
